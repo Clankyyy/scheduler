@@ -1,20 +1,10 @@
 package main
 
 import (
-	"fmt"
-	"net/http"
-
 	"github.com/Clankyyy/scheduler/internal/routes"
 )
 
 func main() {
-	router := routes.NewRouter()
-
-	port := 8000
-	addr := fmt.Sprintf(":%d", port)
-	fmt.Printf("Server listening on http://localhost%s\n", addr)
-	err := http.ListenAndServe(addr, router)
-	if err != nil {
-		panic(err)
-	}
+	apiServer := routes.NewAPIServer(":8000")
+	apiServer.Run()
 }
