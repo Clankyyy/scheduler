@@ -2,14 +2,15 @@ package routes
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
+
+	"github.com/Clankyyy/scheduler/internal/schedule"
 )
 
 func WriteJSON(w http.ResponseWriter, status int, v any) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	w.Header().Add("Content-Type", "application/json")
 	return json.NewEncoder(w).Encode(v)
 }
 
@@ -54,8 +55,8 @@ func (s *APIserver) handleCreateSchedule(w http.ResponseWriter, r *http.Request)
 }
 
 func (s *APIserver) handleGetSchedule(w http.ResponseWriter, r *http.Request) error {
-	fmt.Fprintf(w, "Hit get")
-	return nil
+	group := schedule.NewGroup("4305", 4, 2)
+	return WriteJSON(w, http.StatusOK, group)
 }
 
 func (s *APIserver) handleDeleteSchedule(w http.ResponseWriter, r *http.Request) error {
