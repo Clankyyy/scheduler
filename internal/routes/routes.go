@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-
-	"github.com/Clankyyy/scheduler/internal/schedule"
 )
 
 type APIserver struct {
@@ -35,7 +33,7 @@ func (s *APIserver) handleCreateSchedule(w http.ResponseWriter, r *http.Request)
 }
 
 func (s *APIserver) handleGetSchedule(w http.ResponseWriter, r *http.Request) error {
-	group := schedule.NewGroup("4305", 4, 2)
+	group := 1
 	return WriteJSON(w, http.StatusOK, group)
 }
 
