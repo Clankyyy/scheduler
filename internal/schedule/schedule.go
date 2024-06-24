@@ -1,8 +1,10 @@
 package schedule
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
+	"os"
 )
 
 type Weekly struct {
@@ -23,6 +25,7 @@ func NewDaily(s []subject, w Weekday) *Daily {
 }
 
 func (d Daily) Show() {
+	fmt.Print(d.Weekday)
 	for _, v := range d.Schedule {
 		fmt.Println(v)
 	}
@@ -93,11 +96,34 @@ func Test() {
 	s1 := NewSubject("14:00", "Информатика", "Федин", "416", Lecture)
 	s2 := NewSubject("15:30", "Русский", "Хз", "116", Practice)
 
-	s2.Classroom = "0000"
-	day := []subject{*s1, *s2}
+	day1 := []subject{*s1, *s2}
+	day2 := []subject{*s2, *s1}
+	d1 := NewDaily(day1, Monday)
+	d2 := NewDaily(day2, Thursday)
+	d1.Show()
+	_ = d2
+	w := Weekly{}
 
-	d := NewDaily(day, Monday)
-	d.Show()
+	f, err := os.Open("test.json")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	if err := json.NewDecoder(f).Decode(&w); err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(w)
+	// file, err := os.Create("test.json")
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// e := json.NewEncoder(file)
+	// e.SetIndent("", "    ")
+	// if err := e.Encode(&w); err != nil {
+	// 	fmt.Print(err)
+	// }
 }
 
 func NewGroup(name, faculty string, course int, s subject) *Group {
