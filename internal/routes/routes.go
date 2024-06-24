@@ -4,15 +4,20 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+
+	"github.com/Clankyyy/scheduler/internal/schedule"
+	"github.com/Clankyyy/scheduler/internal/storage"
 )
 
 type APIserver struct {
 	listenAddr string
+	storage    storage.Storager
 }
 
-func NewAPIServer(listenAddr string) *APIserver {
+func NewAPIServer(listenAddr string, storage storage.Storager) *APIserver {
 	return &APIserver{
 		listenAddr: listenAddr,
+		storage:    storage,
 	}
 }
 
@@ -33,8 +38,9 @@ func (s *APIserver) handleCreateSchedule(w http.ResponseWriter, r *http.Request)
 }
 
 func (s *APIserver) handleGetSchedule(w http.ResponseWriter, r *http.Request) error {
-	group := 1
-	return WriteJSON(w, http.StatusOK, group)
+	su := schedule.NewSubject("14:00", "Информатика", "Куянов", "417", schedule.Lecture)
+	g := schedule.NewGroup("4305", "4", 2, *su)
+	return WriteJSON(w, http.StatusOK, g)
 }
 
 func (s *APIserver) handleDeleteSchedule(w http.ResponseWriter, r *http.Request) error {
