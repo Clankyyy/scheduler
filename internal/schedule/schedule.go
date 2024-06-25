@@ -3,8 +3,9 @@ package schedule
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"os"
+
+	"github.com/google/uuid"
 )
 
 type Weekly struct {
@@ -85,11 +86,11 @@ func NewSubject(startTime, name, teacher, classroom string, kind subjectKind) *s
 }
 
 type Group struct {
-	ID       int     `json:"id"`
-	Name     string  `json:"name"`
-	Faculty  string  `json:"faculty"`
-	Course   int     `json:"course"`
-	Subjects subject `json:"subjects"`
+	UUID     uuid.UUID `json:"uuid"`
+	Name     string    `json:"name"`
+	Faculty  string    `json:"faculty"`
+	Course   int       `json:"course"`
+	Schedule Weekly    `json:"subjects"`
 }
 
 func Test() {
@@ -126,12 +127,12 @@ func Test() {
 	// }
 }
 
-func NewGroup(name, faculty string, course int, s subject) *Group {
+func NewGroup(name, faculty string, course int, s Weekly) *Group {
 	return &Group{
-		ID:       rand.Intn(100000),
+		UUID:     uuid.New(),
 		Name:     name,
 		Faculty:  faculty,
 		Course:   course,
-		Subjects: s,
+		Schedule: s,
 	}
 }

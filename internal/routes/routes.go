@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/Clankyyy/scheduler/internal/schedule"
 	"github.com/Clankyyy/scheduler/internal/storage"
@@ -24,7 +25,7 @@ func NewAPIServer(listenAddr string, storage storage.Storager) *APIserver {
 func (s *APIserver) Run() {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /schedule/", makeHTTPHandleFunc(s.handleGetSchedule))
+	mux.HandleFunc("GET /schedule/{id}", makeHTTPHandleFunc(s.handleGetSchedule))
 	mux.HandleFunc("POST /schedule/", makeHTTPHandleFunc(s.handleCreateSchedule))
 	mux.HandleFunc("DELETE /schedule/", makeHTTPHandleFunc(s.handleDeleteSchedule))
 
@@ -38,9 +39,20 @@ func (s *APIserver) handleCreateSchedule(w http.ResponseWriter, r *http.Request)
 }
 
 func (s *APIserver) handleGetSchedule(w http.ResponseWriter, r *http.Request) error {
-	su := schedule.NewSubject("14:00", "Информатика", "Куянов", "417", schedule.Lecture)
-	g := schedule.NewGroup("4305", "4", 2, *su)
-	return WriteJSON(w, http.StatusOK, g)
+	prefix := "data/spgti"
+	id := r.PathValue("id")
+	f, err := os.Open(prefix + id)
+	defer f.Close()
+	if err != nil {
+		return err
+	}
+
+	var weekly schedule.Weekly
+	if err := json.NewDecoder(f).Decode(&weekly); err != nil {
+		return err
+	}
+
+	return WriteJSON(w, http.StatusOK, weekly)
 }
 
 func (s *APIserver) handleDeleteSchedule(w http.ResponseWriter, r *http.Request) error {
