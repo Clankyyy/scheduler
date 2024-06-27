@@ -9,13 +9,13 @@ import (
 )
 
 type Weekly struct {
-	Schedule []Daily
-	IsEven   bool
+	Schedule []Daily `json:"weekly_schedule"`
+	IsEven   bool    `json:"is_even"`
 }
 
 type Daily struct {
-	Weekday  Weekday
-	Schedule []subject
+	Schedule []subject `json:"daily_schedule"`
+	Weekday  Weekday   `json:"weekday"`
 }
 
 func NewDaily(s []subject, w Weekday) *Daily {

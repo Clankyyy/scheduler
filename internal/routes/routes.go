@@ -4,9 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"os"
 
-	"github.com/Clankyyy/scheduler/internal/schedule"
 	"github.com/Clankyyy/scheduler/internal/storage"
 )
 
@@ -39,17 +37,10 @@ func (s *APIserver) handleCreateSchedule(w http.ResponseWriter, r *http.Request)
 }
 
 func (s *APIserver) handleGetSchedule(w http.ResponseWriter, r *http.Request) error {
-	prefix := "data/spgti"
 	id := r.PathValue("id")
-	f, err := os.Open(prefix + id)
-	defer f.Close()
+	weekly, err := s.storage.GetSchedule(id)
 	if err != nil {
-		return err
-	}
-
-	var weekly schedule.Weekly
-	if err := json.NewDecoder(f).Decode(&weekly); err != nil {
-		return err
+		return WriteJSON(w, http.StatusBadRequest, err)
 	}
 
 	return WriteJSON(w, http.StatusOK, weekly)
@@ -62,7 +53,9 @@ func (s *APIserver) handleDeleteSchedule(w http.ResponseWriter, r *http.Request)
 func WriteJSON(w http.ResponseWriter, status int, v any) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	return json.NewEncoder(w).Encode(v)
+	e := json.NewEncoder(w)
+	e.SetIndent("", "    ")
+	return e.Encode(v)
 }
 
 type apiFunc func(http.ResponseWriter, *http.Request) error
