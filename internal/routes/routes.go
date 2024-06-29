@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/Clankyyy/scheduler/internal/schedule"
 	"github.com/Clankyyy/scheduler/internal/storage"
 )
 
@@ -23,7 +24,7 @@ func NewAPIServer(listenAddr string, storage storage.Storager) *APIserver {
 func (s *APIserver) Run() {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /schedule/{id}", makeHTTPHandleFunc(s.handleGetSchedule))
+	mux.HandleFunc("GET /schedule/{slug}", makeHTTPHandleFunc(s.handleGetScheduleBySlug))
 	mux.HandleFunc("POST /schedule/", makeHTTPHandleFunc(s.handleCreateSchedule))
 	mux.HandleFunc("DELETE /schedule/", makeHTTPHandleFunc(s.handleDeleteSchedule))
 
@@ -33,17 +34,26 @@ func (s *APIserver) Run() {
 }
 
 func (s *APIserver) handleCreateSchedule(w http.ResponseWriter, r *http.Request) error {
-	return nil
+	g := &schedule.Group{}
+	if err := json.NewDecoder(r.Body).Decode(g); err != nil {
+		return WriteJSON(w, http.StatusBadRequest, err.Error())
+	}
+	err := s.storage.CreateGroupSchedule(g)
+	if err != nil {
+		return WriteJSON(w, http.StatusBadRequest, err.Error())
+	}
+
+	return WriteJSON(w, http.StatusOK, *g)
 }
 
-func (s *APIserver) handleGetSchedule(w http.ResponseWriter, r *http.Request) error {
-	id := r.PathValue("id")
-	weekly, err := s.storage.GetSchedule(id)
+func (s *APIserver) handleGetScheduleBySlug(w http.ResponseWriter, r *http.Request) error {
+	slug := r.PathValue("slug")
+	weekly, err := s.storage.GetSchedule(slug)
 	if err != nil {
 		return WriteJSON(w, http.StatusBadRequest, err)
 	}
 
-	return WriteJSON(w, http.StatusOK, weekly)
+	return WriteJSON(w, http.StatusOK, weekly.Schedule)
 }
 
 func (s *APIserver) handleDeleteSchedule(w http.ResponseWriter, r *http.Request) error {

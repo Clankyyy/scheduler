@@ -98,14 +98,11 @@ func Test() {
 	s2 := NewSubject("15:30", "Русский", "Хз", "116", Practice)
 
 	day1 := []subject{*s1, *s2}
-	day2 := []subject{*s2, *s1}
 	d1 := NewDaily(day1, Monday)
-	d2 := NewDaily(day2, Thursday)
 	d1.Show()
-	_ = d2
 	w := Weekly{}
 
-	f, err := os.Open("test.json")
+	f, err := os.Open("data/spbgti/2-4305-even.json")
 	if err != nil {
 		panic(err)
 	}
@@ -114,7 +111,12 @@ func Test() {
 	if err := json.NewDecoder(f).Decode(&w); err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(w)
+	g := NewGroup("4305", "4", 2, w)
+	data, err := json.MarshalIndent(g, "", "   ")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Print(string(data))
 	// file, err := os.Create("test.json")
 	// if err != nil {
 	// 	panic(err)

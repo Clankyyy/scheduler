@@ -2,6 +2,7 @@ package storage
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 
 	"github.com/Clankyyy/scheduler/internal/schedule"
@@ -10,7 +11,7 @@ import (
 const postfix = ".json"
 
 type Storager interface {
-	CreateSchedule(g *schedule.Group) error
+	CreateGroupSchedule(g *schedule.Group) error
 	DeleteSchedule(string) error
 	GetSchedule(string) (*schedule.Weekly, error)
 }
@@ -19,8 +20,8 @@ type FSStorage struct {
 	path string
 }
 
-func (fss FSStorage) GetSchedule(id string) (*schedule.Weekly, error) {
-	f, err := os.Open(fss.path + id + postfix)
+func (fss FSStorage) GetSchedule(slug string) (*schedule.Weekly, error) {
+	f, err := os.Open(fss.path + slug + postfix)
 	if err != nil {
 		return nil, err
 	}
@@ -33,13 +34,30 @@ func (fss FSStorage) GetSchedule(id string) (*schedule.Weekly, error) {
 	return &w, nil
 }
 
-func (fss FSStorage) CreateSchedule(g *schedule.Group) error {
+func (fss FSStorage) CreateGroupSchedule(g *schedule.Group) error {
+	evenStatus := ""
+	if g.Schedule.IsEven {
+		evenStatus = "even"
+	} else {
+		evenStatus = "odd"
+	}
+	filename := fss.path + fmt.Sprint(g.Course) + "-" + g.Name + "-" + evenStatus + postfix
+	f, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	e := json.NewEncoder(f)
+	e.SetIndent("", "   ")
+	if err := e.Encode(g); err != nil {
+		return err
+	}
 	return nil
 }
 
 func (fss FSStorage) DeleteSchedule(id string) error {
 	return nil
 }
+
 func NewFSStorage(path string) *FSStorage {
 	return &FSStorage{
 		path: path,
