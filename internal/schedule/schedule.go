@@ -90,7 +90,7 @@ type Group struct {
 	Name     string    `json:"name"`
 	Faculty  string    `json:"faculty"`
 	Course   int       `json:"course"`
-	Schedule Weekly    `json:"subjects"`
+	Schedule []Weekly  `json:"subjects"`
 }
 
 func Test() {
@@ -100,7 +100,12 @@ func Test() {
 	day1 := []subject{*s1, *s2}
 	d1 := NewDaily(day1, Monday)
 	d1.Show()
-	w := Weekly{}
+	w := []Weekly{}
+	w = append(w, Weekly{})
+	w = append(w, Weekly{
+		Schedule: []Daily{*d1, *d1},
+		IsEven:   false,
+	})
 
 	f, err := os.Open("data/spbgti/2-4305-even.json")
 	if err != nil {
@@ -108,7 +113,7 @@ func Test() {
 	}
 	defer f.Close()
 
-	if err := json.NewDecoder(f).Decode(&w); err != nil {
+	if err := json.NewDecoder(f).Decode(&w[0]); err != nil {
 		fmt.Println(err)
 	}
 	g := NewGroup("4305", "4", 2, w)
@@ -117,19 +122,19 @@ func Test() {
 		panic(err)
 	}
 	fmt.Print(string(data))
-	// file, err := os.Create("test.json")
-	// if err != nil {
-	// 	panic(err)
-	// }
+	file, err := os.Create("test.json")
+	if err != nil {
+		panic(err)
+	}
 
-	// e := json.NewEncoder(file)
-	// e.SetIndent("", "    ")
-	// if err := e.Encode(&w); err != nil {
-	// 	fmt.Print(err)
-	// }
+	e := json.NewEncoder(file)
+	e.SetIndent("", "    ")
+	if err := e.Encode(&w); err != nil {
+		fmt.Print(err)
+	}
 }
 
-func NewGroup(name, faculty string, course int, s Weekly) *Group {
+func NewGroup(name, faculty string, course int, s []Weekly) *Group {
 	return &Group{
 		UUID:     uuid.New(),
 		Name:     name,

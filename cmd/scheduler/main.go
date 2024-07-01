@@ -7,6 +7,7 @@ import (
 )
 
 func main() {
+	//testing()
 	s := storage.NewFSStorage("data/spbgti/")
 	apiServer := routes.NewAPIServer(":8000", s)
 	apiServer.Run()

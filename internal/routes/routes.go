@@ -25,8 +25,8 @@ func (s *APIserver) Run() {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /schedule/{slug}", makeHTTPHandleFunc(s.handleGetScheduleBySlug))
-	mux.HandleFunc("POST /schedule/", makeHTTPHandleFunc(s.handleCreateSchedule))
 	mux.HandleFunc("DELETE /schedule/{slug}", makeHTTPHandleFunc(s.handleDeleteScheduleBySlug))
+	mux.HandleFunc("POST /schedule/", makeHTTPHandleFunc(s.handleCreateSchedule))
 
 	log.Println("API running on port: ", s.listenAddr)
 
@@ -53,7 +53,7 @@ func (s *APIserver) handleGetScheduleBySlug(w http.ResponseWriter, r *http.Reque
 		return WriteJSON(w, http.StatusNotFound, err.Error())
 	}
 
-	return WriteJSON(w, http.StatusOK, weekly.Schedule)
+	return WriteJSON(w, http.StatusOK, weekly)
 }
 
 func (s *APIserver) handleDeleteScheduleBySlug(w http.ResponseWriter, r *http.Request) error {
