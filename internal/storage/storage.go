@@ -2,7 +2,9 @@ package storage
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 
 	"github.com/Clankyyy/scheduler/internal/schedule"
@@ -42,19 +44,23 @@ func (fss FSStorage) CreateGroupSchedule(g *schedule.Group) error {
 		evenStatus = "odd"
 	}
 	filename := fss.path + fmt.Sprint(g.Course) + "-" + g.Name + "-" + evenStatus + postfix
-	f, err := os.Create(filename)
+	f, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
 	if err != nil {
 		return err
 	}
 	e := json.NewEncoder(f)
 	e.SetIndent("", "   ")
-	if err := e.Encode(g); err != nil {
+	if err := e.Encode(g.Schedule); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (fss FSStorage) DeleteSchedule(id string) error {
+func (fss FSStorage) DeleteSchedule(slug string) error {
+	err := os.Remove(fss.path + slug + postfix)
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
 	return nil
 }
 
