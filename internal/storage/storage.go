@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"strings"
 
 	"github.com/Clankyyy/scheduler/internal/schedule"
 )
@@ -15,14 +16,15 @@ const postfix = ".json"
 type Storager interface {
 	CreateGroupSchedule(g *schedule.Group) error
 	DeleteSchedule(string) error
-	GetSchedule(string) ([]schedule.Weekly, error)
+	GetScheduleBySlug(string) ([]schedule.Weekly, error)
+	GetSchedule() ([]ScheduleResponse, error)
 }
 
 type FSStorage struct {
 	path string
 }
 
-func (fss FSStorage) GetSchedule(slug string) ([]schedule.Weekly, error) {
+func (fss FSStorage) GetScheduleBySlug(slug string) ([]schedule.Weekly, error) {
 	f, err := os.Open(fss.path + slug + postfix)
 	if err != nil {
 		return nil, err
@@ -34,6 +36,22 @@ func (fss FSStorage) GetSchedule(slug string) ([]schedule.Weekly, error) {
 		return nil, err
 	}
 	return w, nil
+}
+
+func (fss FSStorage) GetSchedule() ([]ScheduleResponse, error) {
+	files, err := os.ReadDir(fss.path)
+	respose := make([]ScheduleResponse, 0, len(files))
+	if err != nil {
+		return respose, err
+	}
+	for _, file := range files {
+		cleanName := strings.Split(file.Name(), ".")[0]
+		details := strings.Split(cleanName, "-")
+		if len(details) == 2 {
+			respose = append(respose, ScheduleResponse{details[0], details[1]})
+		}
+	}
+	return respose, nil
 }
 
 func (fss FSStorage) CreateGroupSchedule(g *schedule.Group) error {
@@ -65,4 +83,7 @@ func NewFSStorage(path string) *FSStorage {
 	}
 }
 
-//home\clanky\projects\scheduler\data\spbgti
+type ScheduleResponse struct {
+	Course string `json:"course"`
+	Name   string `json:"name"`
+}
