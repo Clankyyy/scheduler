@@ -24,14 +24,23 @@ func NewAPIServer(listenAddr string, storage storage.Storager) *APIserver {
 func (s *APIserver) Run() {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /schedule/{slug}", makeHTTPHandleFunc(s.handleGetScheduleBySlug))
 	mux.HandleFunc("GET /schedule/", makeHTTPHandleFunc(s.handleGetSchedule))
-	mux.HandleFunc("DELETE /schedule/{slug}", makeHTTPHandleFunc(s.handleDeleteScheduleBySlug))
 	mux.HandleFunc("POST /schedule/", makeHTTPHandleFunc(s.handleCreateSchedule))
+	mux.HandleFunc("GET /schedule/{slug}", makeHTTPHandleFunc(s.handleGetScheduleBySlug))
+	mux.HandleFunc("PUT /schedule/{slug}", makeHTTPHandleFunc(s.handleUpdateSchedule))
+	mux.HandleFunc("DELETE /schedule/{slug}", makeHTTPHandleFunc(s.handleDeleteScheduleBySlug))
 
 	log.Println("API running on port: ", s.listenAddr)
 
 	http.ListenAndServe(s.listenAddr, mux)
+}
+
+func (s *APIserver) handleGetSchedule(w http.ResponseWriter, r *http.Request) error {
+	groups, err := s.storage.GetSchedule()
+	if err != nil {
+		WriteJSON(w, http.StatusInternalServerError, err.Error())
+	}
+	return WriteJSON(w, http.StatusOK, groups)
 }
 
 func (s *APIserver) handleCreateSchedule(w http.ResponseWriter, r *http.Request) error {
@@ -47,14 +56,6 @@ func (s *APIserver) handleCreateSchedule(w http.ResponseWriter, r *http.Request)
 	return WriteJSON(w, http.StatusCreated, *g)
 }
 
-func (s *APIserver) handleGetSchedule(w http.ResponseWriter, r *http.Request) error {
-	groups, err := s.storage.GetSchedule()
-	if err != nil {
-		WriteJSON(w, http.StatusInternalServerError, err.Error())
-	}
-	return WriteJSON(w, http.StatusOK, groups)
-}
-
 func (s *APIserver) handleGetScheduleBySlug(w http.ResponseWriter, r *http.Request) error {
 	slug := r.PathValue("slug")
 	weekly, err := s.storage.GetScheduleBySlug(slug)
@@ -63,6 +64,20 @@ func (s *APIserver) handleGetScheduleBySlug(w http.ResponseWriter, r *http.Reque
 	}
 
 	return WriteJSON(w, http.StatusOK, weekly)
+}
+
+func (s *APIserver) handleUpdateSchedule(w http.ResponseWriter, r *http.Request) error {
+	newSchedule := make([]schedule.Weekly, 0, 2)
+	slug := r.PathValue("slug")
+	if err := json.NewDecoder(r.Body).Decode(&newSchedule); err != nil {
+		return WriteJSON(w, http.StatusBadRequest, err.Error())
+	}
+	err := s.storage.UpdateScheduleBySlug(newSchedule, slug)
+	if err != nil {
+		return WriteJSON(w, http.StatusBadRequest, err.Error())
+	}
+
+	return WriteJSON(w, http.StatusCreated, newSchedule)
 }
 
 func (s *APIserver) handleDeleteScheduleBySlug(w http.ResponseWriter, r *http.Request) error {

@@ -18,6 +18,7 @@ type Storager interface {
 	DeleteSchedule(string) error
 	GetScheduleBySlug(string) ([]schedule.Weekly, error)
 	GetSchedule() ([]ScheduleResponse, error)
+	UpdateScheduleBySlug([]schedule.Weekly, string) error
 }
 
 type FSStorage struct {
@@ -36,6 +37,23 @@ func (fss FSStorage) GetScheduleBySlug(slug string) ([]schedule.Weekly, error) {
 		return nil, err
 	}
 	return w, nil
+}
+func (fss FSStorage) UpdateScheduleBySlug(s []schedule.Weekly, slug string) error {
+	path := fss.path + slug + postfix
+	f, err := os.OpenFile(path, os.O_RDWR, 0666)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	e := json.NewEncoder(f)
+	e.SetIndent("", "   ")
+
+	if err := e.Encode(s); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (fss FSStorage) GetSchedule() ([]ScheduleResponse, error) {
@@ -61,6 +79,8 @@ func (fss FSStorage) CreateGroupSchedule(g *schedule.Group) error {
 	if err != nil {
 		return err
 	}
+	defer f.Close()
+
 	e := json.NewEncoder(f)
 	e.SetIndent("", "   ")
 	if err := e.Encode(g.Schedule); err != nil {
