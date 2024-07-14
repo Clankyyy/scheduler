@@ -13,6 +13,13 @@ type Weekly struct {
 	IsEven   bool    `json:"is_even"`
 }
 
+func (w Weekly) EvenString() string {
+	if w.IsEven {
+		return "even"
+	}
+	return "odd"
+}
+
 type Daily struct {
 	Schedule []subject `json:"daily_schedule"`
 	Weekday  Weekday   `json:"weekday"`
@@ -30,6 +37,29 @@ func (d Daily) Show() {
 	for _, v := range d.Schedule {
 		fmt.Println(v)
 	}
+}
+
+type ScheduleRequestParam int
+
+const (
+	Even ScheduleRequestParam = iota + 1
+	Odd
+	Full
+)
+
+func (sr ScheduleRequestParam) String() string {
+	return [...]string{"even", "odd", "full"}[sr-1]
+}
+
+func BuildWeeklyType(param string) (ScheduleRequestParam, error) {
+	if param == "even" {
+		return Even, nil
+	} else if param == "odd" {
+		return Odd, nil
+	} else if param == "full" {
+		return Full, nil
+	}
+	return Even, fmt.Errorf("bad parameter")
 }
 
 type Weekday int
