@@ -16,8 +16,8 @@ const postfix = ".json"
 type Storager interface {
 	CreateGroupSchedule(g *schedule.Group) error
 	DeleteSchedule(string) error
-	GetWeeklyBySlug(string, schedule.ScheduleRequestParam) ([]schedule.Weekly, error)
-	GetDailyBySlug(string) (schedule.Daily, error)
+	GetWeeklyBySlug(string, schedule.WeeklyQuery) ([]schedule.Weekly, error)
+	GetDailyBySlug(string, schedule.Weekday, schedule.DailyQuery) (schedule.Daily, error)
 	GetGroups() ([]GroupResponse, error)
 	UpdateWeeklyBySlug([]schedule.Weekly, string) error
 }
@@ -26,16 +26,27 @@ type FSStorage struct {
 	path string
 }
 
-func (fss FSStorage) GetDailyBySlug(slug string) (schedule.Daily, error) {
+func (fss FSStorage) GetDailyBySlug(slug string, day schedule.Weekday, dailyType schedule.DailyQuery) (schedule.Daily, error) {
+	f, err := os.Open(fss.path + slug + "-" + dailyType.String() + postfix)
+	if err != nil {
+		return schedule.Daily{}, err
+	}
+	defer f.Close()
 
-	return schedule.Daily{}, nil
+	var w schedule.Weekly
+	if err := json.NewDecoder(f).Decode(&w); err != nil {
+		return schedule.Daily{}, err
+	}
+	d := w.Daily(day)
+
+	return *d, nil
 }
 
-func (fss FSStorage) GetWeeklyBySlug(slug string, param schedule.ScheduleRequestParam) ([]schedule.Weekly, error) {
-	if param == schedule.Full {
+func (fss FSStorage) GetWeeklyBySlug(slug string, param schedule.WeeklyQuery) ([]schedule.Weekly, error) {
+	if param == schedule.WeeklyFull {
 		w, err := fss.getFullWeekly(slug)
 		return w, err
-	} else if param == schedule.Even || param == schedule.Odd {
+	} else if param == schedule.WeeklyEven || param == schedule.WeeklyOdd {
 		f, err := os.Open(fss.path + slug + "-" + param.String() + postfix)
 		if err != nil {
 			return nil, err
@@ -114,7 +125,7 @@ func (fss FSStorage) DeleteSchedule(slug string) error {
 }
 
 func (fss FSStorage) getFullWeekly(slug string) ([]schedule.Weekly, error) {
-	statusList := []string{schedule.Even.String(), schedule.Odd.String()}
+	statusList := []string{schedule.WeeklyEven.String(), schedule.WeeklyOdd.String()}
 	w := make([]schedule.Weekly, 2)
 	for i, v := range statusList {
 		f, err := os.Open(fss.path + slug + "-" + v + postfix)

@@ -13,6 +13,15 @@ type Weekly struct {
 	IsEven   bool    `json:"is_even"`
 }
 
+func (w Weekly) Daily(day Weekday) *Daily {
+	for i := range w.Schedule {
+		if w.Schedule[i].Weekday == day {
+			return &w.Schedule[i]
+		}
+	}
+	return &Daily{}
+}
+
 func (w Weekly) EvenString() string {
 	if w.IsEven {
 		return "even"
@@ -39,27 +48,47 @@ func (d Daily) Show() {
 	}
 }
 
-type ScheduleRequestParam int
+type DailyQuery int
 
 const (
-	Even ScheduleRequestParam = iota + 1
-	Odd
-	Full
+	DailyEven DailyQuery = iota + 1
+	DailyOdd  DailyQuery = iota + 1
 )
 
-func (sr ScheduleRequestParam) String() string {
-	return [...]string{"even", "odd", "full"}[sr-1]
+func (dq DailyQuery) String() string {
+	return [...]string{"even", "odd"}[dq-1]
 }
 
-func BuildWeeklyType(param string) (ScheduleRequestParam, error) {
+func BuildDailyQuery(param string) (DailyQuery, error) {
 	if param == "even" {
-		return Even, nil
+		return DailyEven, nil
 	} else if param == "odd" {
-		return Odd, nil
-	} else if param == "full" {
-		return Full, nil
+		return DailyOdd, nil
 	}
-	return Even, fmt.Errorf("bad parameter")
+	return DailyEven, fmt.Errorf("bad value")
+}
+
+type WeeklyQuery int
+
+const (
+	WeeklyEven WeeklyQuery = iota + 1
+	WeeklyOdd
+	WeeklyFull
+)
+
+func (wq WeeklyQuery) String() string {
+	return [...]string{"even", "odd", "full"}[wq-1]
+}
+
+func BuildWeeklyQuery(param string) (WeeklyQuery, error) {
+	if param == "even" {
+		return WeeklyEven, nil
+	} else if param == "odd" {
+		return WeeklyOdd, nil
+	} else if param == "full" {
+		return WeeklyFull, nil
+	}
+	return WeeklyEven, fmt.Errorf("bad value")
 }
 
 type Weekday int
@@ -80,6 +109,27 @@ func (w Weekday) String() string {
 
 func (w Weekday) EnumIndex() int {
 	return int(w)
+}
+
+func BuildWeekday(day string) (Weekday, error) {
+	switch day {
+	case "monday":
+		return Monday, nil
+	case "tuesday":
+		return Tuesday, nil
+	case "wednesday":
+		return Wednesday, nil
+	case "thursday":
+		return Thursday, nil
+	case "friday":
+		return Friday, nil
+	case "saturday":
+		return Saturday, nil
+	case "sunday":
+		return Sunday, nil
+	default:
+		return Monday, fmt.Errorf("bad string")
+	}
 }
 
 type subjectKind int

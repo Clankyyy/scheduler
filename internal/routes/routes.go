@@ -44,8 +44,22 @@ func (s *APIserver) Run() {
 }
 
 func (s *APIserver) handleGetDaily(w http.ResponseWriter, r *http.Request) error {
-	// TODO
-	return nil
+	weekday, err1 := schedule.BuildWeekday(r.URL.Query().Get("day"))
+	scheduleType, err2 := schedule.BuildDailyQuery(r.URL.Query().Get("type"))
+	if err1 != nil || err2 != nil {
+		err := errs.NewAPIError(http.StatusBadRequest, "bad parameter format")
+		return WriteJSON(w, err.StatusCode, err)
+	}
+	slug := r.PathValue("slug")
+
+	daily, err := s.storage.GetDailyBySlug(slug, weekday, scheduleType)
+
+	if err != nil {
+		err := errs.NewAPIError(http.StatusNotFound, fmt.Sprintf("Group %s schedule dont exist", slug))
+		return WriteJSON(w, err.StatusCode, err)
+	}
+
+	return WriteJSON(w, http.StatusOK, daily)
 }
 
 func (s *APIserver) handlePing(w http.ResponseWriter, r *http.Request) error {
@@ -78,17 +92,17 @@ func (s *APIserver) handleCreateWeekly(w http.ResponseWriter, r *http.Request) e
 
 func (s *APIserver) handleGetWeeklyBySlug(w http.ResponseWriter, r *http.Request) error {
 	slug := r.PathValue("slug")
-	scheduleTypeStr := r.URL.Query().Get("day")
-	scheduleType, err := schedule.BuildWeeklyType(scheduleTypeStr)
+	scheduleTypeStr := r.URL.Query().Get("type")
+	scheduleType, err := schedule.BuildWeeklyQuery(scheduleTypeStr)
 	if err != nil {
 		err := errs.NewAPIError(http.StatusBadRequest, "Incorrect parameter format")
-		return WriteJSON(w, http.StatusBadRequest, err)
+		return WriteJSON(w, err.StatusCode, err)
 	}
 
 	weekly, err := s.storage.GetWeeklyBySlug(slug, scheduleType)
 	if err != nil {
 		err := errs.NewAPIError(http.StatusInternalServerError, "Unable to get schedule")
-		return WriteJSON(w, http.StatusNotFound, err)
+		return WriteJSON(w, err.StatusCode, err)
 	}
 
 	return WriteJSON(w, http.StatusOK, weekly)
@@ -131,9 +145,9 @@ func makeHTTPHandleFunc(f apiFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := f(w, r); err != nil {
 			apiErr := errs.APIError{
-				HTTPStatusCode: http.StatusInternalServerError,
-				Message:        "Service unable to process request",
-				Details:        "Unexpected error",
+				StatusCode: http.StatusInternalServerError,
+				Message:    "Service unable to process request",
+				Details:    "Unexpected error",
 			}
 			WriteJSON(w, http.StatusBadRequest, apiErr)
 		}
