@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"strings"
+	"strconv"
 
 	"github.com/Clankyyy/scheduler/internal/schedule"
 )
@@ -18,7 +18,7 @@ type Storager interface {
 	DeleteSchedule(string) error
 	GetWeeklyBySlug(string, schedule.WeeklyQuery) ([]schedule.Weekly, error)
 	GetDailyBySlug(string, schedule.Weekday, schedule.DailyQuery) (schedule.Daily, error)
-	GetGroups() ([]GroupResponse, error)
+	GetGroups() (GroupsInfo, error)
 	UpdateWeeklyBySlug([]schedule.Weekly, string) error
 }
 
@@ -82,9 +82,10 @@ func (fss FSStorage) UpdateWeeklyBySlug(s []schedule.Weekly, slug string) error 
 }
 
 func (fss FSStorage) CreateGroupSchedule(g *schedule.Group) error {
+	slug := strconv.Itoa(g.Course) + "-" + g.Name
 	for i, v := range g.Schedule {
 		evenStr := v.EvenString()
-		path := fss.path + fmt.Sprint(g.Course) + "-" + g.Name + "-" + evenStr + postfix
+		path := fss.path + slug + "-" + evenStr + postfix
 		f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
 		if err != nil {
 			return err
@@ -97,23 +98,22 @@ func (fss FSStorage) CreateGroupSchedule(g *schedule.Group) error {
 		}
 	}
 
-	return nil
+	return fss.addGroup(slug)
 }
 
-func (fss FSStorage) GetGroups() ([]GroupResponse, error) {
-	files, err := os.ReadDir(fss.path)
-	respose := make([]GroupResponse, 0, len(files))
+func (fss FSStorage) GetGroups() (GroupsInfo, error) {
+	result := NewGroupInfo(20)
+	f, err := os.Open(fss.path + "list" + postfix)
 	if err != nil {
-		return respose, err
+		return *result, err
 	}
-	for _, file := range files {
-		cleanName := strings.Split(file.Name(), ".")[0]
-		details := strings.Split(cleanName, "-")
-		if len(details) == 2 {
-			respose = append(respose, GroupResponse{details[0], details[1]})
-		}
+	defer f.Close()
+
+	if err := json.NewDecoder(f).Decode(&result); err != nil {
+		return *result, err
 	}
-	return respose, nil
+
+	return *result, nil
 }
 
 func (fss FSStorage) DeleteSchedule(slug string) error {
@@ -141,13 +141,41 @@ func (fss FSStorage) getFullWeekly(slug string) ([]schedule.Weekly, error) {
 	return w, nil
 }
 
+func (fss FSStorage) addGroup(slug string) error {
+	f, err := os.OpenFile(fss.path+"list.json", os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
+	// f, err := os.Open(fss.path + "list" + postfix)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	groups := NewGroupInfo(20)
+	// if err := json.NewDecoder(f).Decode(&groups); err != nil {
+	// 	return err
+	// }
+	if _, ok := groups.Names[slug]; ok {
+		return errors.New("group already exists")
+	}
+	groups.Names[slug] = struct{}{}
+
+	enc := json.NewEncoder(f)
+	enc.SetIndent("", "   ")
+	return enc.Encode(&groups)
+}
+
 func NewFSStorage(path string) *FSStorage {
 	return &FSStorage{
 		path: path,
 	}
 }
 
-type GroupResponse struct {
-	Course string `json:"course"`
-	Name   string `json:"name"`
+type GroupsInfo struct {
+	Names map[string]struct{}
+}
+
+func NewGroupInfo(len int) *GroupsInfo {
+	g := &GroupsInfo{
+		Names: make(map[string]struct{}, len),
+	}
+	return g
 }

@@ -3,7 +3,7 @@ package schedule
 import (
 	"encoding/json"
 	"fmt"
-	"os"
+	"strconv"
 
 	"github.com/google/uuid"
 )
@@ -30,11 +30,11 @@ func (w Weekly) EvenString() string {
 }
 
 type Daily struct {
-	Schedule []subject `json:"daily_schedule"`
+	Schedule []Subject `json:"daily_schedule"`
 	Weekday  Weekday   `json:"weekday"`
 }
 
-func NewDaily(s []subject, w Weekday) *Daily {
+func NewDaily(s []Subject, w Weekday) *Daily {
 	return &Daily{
 		Schedule: s,
 		Weekday:  w,
@@ -103,8 +103,12 @@ const (
 	Sunday
 )
 
+func (w Weekday) MarshalJSON() ([]byte, error) {
+	return json.Marshal(w.String())
+}
+
 func (w Weekday) String() string {
-	return [...]string{"Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"}[w-1]
+	return [...]string{"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"}[w-1]
 }
 
 func (w Weekday) EnumIndex() int {
@@ -132,31 +136,35 @@ func BuildWeekday(day string) (Weekday, error) {
 	}
 }
 
-type subjectKind int
+type SubjectKind int
 
 const (
-	Lecture subjectKind = iota
+	Lecture SubjectKind = iota
 	Practice
 )
 
-type subject struct {
+func (s SubjectKind) MarshalJSON() ([]byte, error) {
+	return json.Marshal(s.String())
+}
+
+func (s SubjectKind) String() string {
+	return [...]string{"lecture", "practice"}[s]
+}
+
+func (s SubjectKind) EnumIndex() int {
+	return int(s)
+}
+
+type Subject struct {
 	Start     string      `json:"start"`
 	Name      string      `json:"name"`
 	Teacher   string      `json:"teacher"`
 	Classroom string      `json:"classroom"`
-	Kind      subjectKind `json:"kind"`
+	Kind      SubjectKind `json:"kind"`
 }
 
-func (s subjectKind) String() string {
-	return [...]string{"Lecture", "Practice"}[s]
-}
-
-func (s subjectKind) EnumIndex() int {
-	return int(s)
-}
-
-func NewSubject(startTime, name, teacher, classroom string, kind subjectKind) *subject {
-	return &subject{
+func NewSubject(startTime, name, teacher, classroom string, kind SubjectKind) *Subject {
+	return &Subject{
 		Start:     startTime,
 		Name:      name,
 		Teacher:   teacher,
@@ -173,45 +181,8 @@ type Group struct {
 	Schedule []Weekly  `json:"subjects"`
 }
 
-func Test() {
-	s1 := NewSubject("14:00", "Информатика", "Федин", "416", Lecture)
-	s2 := NewSubject("15:30", "Русский", "Хз", "116", Practice)
-
-	day1 := []subject{*s1, *s2}
-	d1 := NewDaily(day1, Monday)
-	d1.Show()
-	w := []Weekly{}
-	w = append(w, Weekly{})
-	w = append(w, Weekly{
-		Schedule: []Daily{*d1, *d1},
-		IsEven:   false,
-	})
-
-	f, err := os.Open("data/spbgti/2-4305-even.json")
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-
-	if err := json.NewDecoder(f).Decode(&w[0]); err != nil {
-		fmt.Println(err)
-	}
-	g := NewGroup("4305", "4", 2, w)
-	data, err := json.MarshalIndent(g, "", "   ")
-	if err != nil {
-		panic(err)
-	}
-	fmt.Print(string(data))
-	file, err := os.Create("test.json")
-	if err != nil {
-		panic(err)
-	}
-
-	e := json.NewEncoder(file)
-	e.SetIndent("", "    ")
-	if err := e.Encode(&w); err != nil {
-		fmt.Print(err)
-	}
+func (g Group) Slug() string {
+	return strconv.Itoa(g.Course) + "-" + g.Name
 }
 
 func NewGroup(name, faculty string, course int, s []Weekly) *Group {
