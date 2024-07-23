@@ -143,16 +143,15 @@ func (fss FSStorage) getFullWeekly(slug string) ([]schedule.Weekly, error) {
 
 func (fss FSStorage) addGroup(slug string) error {
 	f, err := os.OpenFile(fss.path+"list.json", os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
-	// f, err := os.Open(fss.path + "list" + postfix)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
 	groups := NewGroupInfo(20)
-	// if err := json.NewDecoder(f).Decode(&groups); err != nil {
-	// 	return err
-	// }
+	if err := json.NewDecoder(f).Decode(&groups); err != nil {
+		return err
+	}
 	if _, ok := groups.Names[slug]; ok {
 		return errors.New("group already exists")
 	}

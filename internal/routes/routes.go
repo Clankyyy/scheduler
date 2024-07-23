@@ -71,10 +71,14 @@ func (s *APIserver) handlePing(w http.ResponseWriter, r *http.Request) error {
 
 func (s *APIserver) handleGetGroups(w http.ResponseWriter, r *http.Request) error {
 	groups, err := s.storage.GetGroups()
+	groupsStr := make([]string, 0, len(groups.Names))
+	for key := range groups.Names {
+		groupsStr = append(groupsStr, key)
+	}
 	if err != nil {
 		WriteJSON(w, http.StatusInternalServerError, err.Error())
 	}
-	return WriteJSON(w, http.StatusOK, groups)
+	return WriteJSON(w, http.StatusOK, groupsStr)
 }
 
 func (s *APIserver) handleCreateWeekly(w http.ResponseWriter, r *http.Request) error {
