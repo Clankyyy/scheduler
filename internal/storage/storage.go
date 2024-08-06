@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log"
 	"os"
 	"strconv"
 
@@ -29,12 +30,14 @@ type FSStorage struct {
 func (fss FSStorage) GetDailyBySlug(slug string, day schedule.Weekday, dailyType schedule.DailyQuery) (schedule.Daily, error) {
 	f, err := os.Open(fss.path + slug + "-" + dailyType.String() + postfix)
 	if err != nil {
+		log.Println("Error opening file", err.Error())
 		return schedule.Daily{}, err
 	}
 	defer f.Close()
 
 	var w schedule.Weekly
 	if err := json.NewDecoder(f).Decode(&w); err != nil {
+		log.Println("Error decoding type", err.Error())
 		return schedule.Daily{}, err
 	}
 	d := w.Daily(day)
