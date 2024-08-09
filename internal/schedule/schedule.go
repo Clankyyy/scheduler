@@ -4,13 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-
-	"github.com/google/uuid"
 )
 
 type Weekly struct {
-	Schedule []Daily `json:"weekly_schedule"`
-	IsEven   bool    `json:"is_even"`
+	Schedule []Daily `json:"weekly_schedule" bson:"weekly_schedule"`
+	IsEven   bool    `json:"is_even" bson:"is_even"`
 }
 
 func (w Weekly) Daily(day Weekday) *Daily {
@@ -31,7 +29,7 @@ func (w Weekly) EvenString() string {
 
 type Daily struct {
 	Schedule []Subject `json:"daily_schedule"`
-	Weekday  Weekday   `json:"weekday"`
+	Weekday  Weekday   `json:"weekday" bson:"inline"`
 }
 
 func NewDaily(s []Subject, w Weekday) *Daily {
@@ -160,7 +158,7 @@ type Subject struct {
 	Name      string      `json:"name"`
 	Teacher   string      `json:"teacher"`
 	Classroom string      `json:"classroom"`
-	Kind      SubjectKind `json:"kind"`
+	Kind      SubjectKind `json:"kind" bson:"inline"`
 }
 
 func NewSubject(startTime, name, teacher, classroom string, kind SubjectKind) *Subject {
@@ -174,11 +172,10 @@ func NewSubject(startTime, name, teacher, classroom string, kind SubjectKind) *S
 }
 
 type Group struct {
-	UUID     uuid.UUID `json:"uuid"`
-	Name     string    `json:"name"`
-	Faculty  string    `json:"faculty"`
-	Course   int       `json:"course"`
-	Schedule []Weekly  `json:"subjects"`
+	Name     string   `json:"name"`
+	Faculty  string   `json:"faculty"`
+	Course   int      `json:"course"`
+	Schedule []Weekly `json:"subjects"`
 }
 
 func (g Group) Slug() string {
@@ -187,7 +184,6 @@ func (g Group) Slug() string {
 
 func NewGroup(name, faculty string, course int, s []Weekly) *Group {
 	return &Group{
-		UUID:     uuid.New(),
 		Name:     name,
 		Faculty:  faculty,
 		Course:   course,

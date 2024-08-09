@@ -16,11 +16,16 @@ const postfix = ".json"
 
 type Storager interface {
 	CreateGroupSchedule(g *schedule.Group) error
-	DeleteSchedule(string) error
+	DeleteSchedule(slug string) error
 	GetWeeklyBySlug(string, schedule.WeeklyQuery) ([]schedule.Weekly, error)
 	GetDailyBySlug(string, schedule.Weekday, schedule.DailyQuery) (schedule.Daily, error)
 	GetGroups() (GroupsInfo, error)
 	UpdateWeeklyBySlug([]schedule.Weekly, string) error
+}
+
+type GroupInfo struct {
+	Course string `json:"course" bson:"course, omitempty"`
+	Name   string `json:"name" bson:"name, omitemptys"`
 }
 
 type FSStorage struct {
