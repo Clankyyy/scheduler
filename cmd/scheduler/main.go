@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/Clankyyy/scheduler/internal/mgstorage"
+	"github.com/Clankyyy/scheduler/internal/routes"
 	"github.com/joho/godotenv"
 )
 
@@ -20,8 +21,7 @@ func main() {
 		log.Fatal("Fail to load mongo uri")
 	}
 	mongo := mgstorage.NewMGStorage(uri)
-	log.Print(mongo)
 	// s := storage.NewFSStorage("data/spbgti/")
-	// apiServer := routes.NewAPIServer(":8000", s)
-	// apiServer.Run()
+	apiServer := routes.NewAPIServer(":8000", mongo)
+	apiServer.Run()
 }

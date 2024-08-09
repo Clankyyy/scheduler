@@ -29,7 +29,7 @@ func (w Weekly) EvenString() string {
 
 type Daily struct {
 	Schedule []Subject `json:"daily_schedule"`
-	Weekday  Weekday   `json:"weekday" bson:"inline"`
+	Weekday  Weekday   `json:"weekday"`
 }
 
 func NewDaily(s []Subject, w Weekday) *Daily {
@@ -158,7 +158,7 @@ type Subject struct {
 	Name      string      `json:"name"`
 	Teacher   string      `json:"teacher"`
 	Classroom string      `json:"classroom"`
-	Kind      SubjectKind `json:"kind" bson:"inline"`
+	Kind      SubjectKind `json:"kind"`
 }
 
 func NewSubject(startTime, name, teacher, classroom string, kind SubjectKind) *Subject {

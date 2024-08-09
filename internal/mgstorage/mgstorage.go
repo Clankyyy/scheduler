@@ -2,6 +2,7 @@ package mgstorage
 
 import (
 	"context"
+	"errors"
 	"log"
 	"strings"
 	"time"
@@ -23,6 +24,22 @@ import (
 
 type MGStorage struct {
 	client *mongo.Client
+}
+
+func (mgs *MGStorage) GetDailyBySlug(slug string, weekday schedule.Weekday, query schedule.DailyQuery) (schedule.Daily, error) {
+	return schedule.Daily{}, nil
+}
+func (mgs *MGStorage) UpdateWeeklyBySlug(slug string, s []schedule.Weekly) error {
+	return nil
+}
+
+func (mgs *MGStorage) GetWeeklyBySlug(slug string, query schedule.WeeklyQuery) ([]schedule.Weekly, error) {
+	// course, name, err := ParseSlug(slug)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	//filter := bson.D{{"course", course}, {"name", name}, {} }
+	return nil, nil
 }
 
 func (mgs *MGStorage) GetGroups() ([]storage.GroupInfo, error) {
@@ -48,8 +65,10 @@ func (mgs *MGStorage) GetGroups() ([]storage.GroupInfo, error) {
 func (mgs *MGStorage) DeleteSchedule(slug string) error {
 	col := mgs.client.Database("scheduler").Collection("groups")
 
-	splited := strings.Split(slug, "-")
-	course, name := splited[0], splited[1]
+	course, name, err := ParseSlug(slug)
+	if err != nil {
+		return err
+	}
 	filter := bson.D{{Key: "course", Value: course}, {Key: "name", Value: name}}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(500*time.Millisecond))
@@ -63,8 +82,8 @@ func (mgs *MGStorage) CreateGroupSchedule(g *schedule.Group) error {
 	collection := mgs.client.Database("scheduler").Collection("groups")
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(500*time.Millisecond))
 	defer cancel()
-	res, err := collection.InsertOne(ctx, *g)
-	log.Println("Inserted id:", res.InsertedID)
+	_, err := collection.InsertOne(ctx, *g)
+	//log.Println("Inserted id:", res.InsertedID)
 	return err
 }
 
@@ -81,4 +100,14 @@ func NewMGStorage(uri string) *MGStorage {
 	return &MGStorage{
 		client: client,
 	}
+}
+
+func ParseSlug(slug string) (course, name string, err error) {
+	splited := strings.Split(slug, "-")
+	if len(splited) != 2 {
+		return "", "", errors.New("bad slug format")
+	}
+	course, name = splited[0], splited[1]
+
+	return course, name, nil
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	errs "github.com/Clankyyy/scheduler/internal/errors"
@@ -71,9 +72,10 @@ func (s *APIserver) handlePing(w http.ResponseWriter, r *http.Request) error {
 
 func (s *APIserver) handleGetGroups(w http.ResponseWriter, r *http.Request) error {
 	groups, err := s.storage.GetGroups()
-	groupsStr := make([]string, 0, len(groups.Names))
-	for key := range groups.Names {
-		groupsStr = append(groupsStr, key)
+	groupsStr := make([]string, 0, len(groups))
+	for _, v := range groups {
+		slug := strconv.Itoa(v.Course) + "-" + v.Name
+		groupsStr = append(groupsStr, slug)
 	}
 	if err != nil {
 		WriteJSON(w, http.StatusInternalServerError, err.Error())
@@ -118,7 +120,7 @@ func (s *APIserver) handleUpdateWeekly(w http.ResponseWriter, r *http.Request) e
 	if err := json.NewDecoder(r.Body).Decode(&newSchedule); err != nil {
 		return WriteJSON(w, http.StatusBadRequest, err.Error())
 	}
-	err := s.storage.UpdateWeeklyBySlug(newSchedule, slug)
+	err := s.storage.UpdateWeeklyBySlug(slug, newSchedule)
 	if err != nil {
 		return WriteJSON(w, http.StatusBadRequest, err.Error())
 	}
