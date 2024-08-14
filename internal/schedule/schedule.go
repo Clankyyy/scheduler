@@ -78,6 +78,10 @@ func (wq WeeklyQuery) String() string {
 	return [...]string{"even", "odd", "full"}[wq-1]
 }
 
+func (wq WeeklyQuery) Boolean() bool {
+	return [...]bool{true, false, true}[wq-1]
+}
+
 func BuildWeeklyQuery(param string) (WeeklyQuery, error) {
 	if param == "even" {
 		return WeeklyEven, nil
@@ -101,9 +105,9 @@ const (
 	Sunday
 )
 
-func (w Weekday) MarshalJSON() ([]byte, error) {
-	return json.Marshal(w.String())
-}
+// func (w Weekday) MarshalJSON() ([]byte, error) {
+// 	return json.Marshal(w.String())
+// }
 
 func (w Weekday) String() string {
 	return [...]string{"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"}[w-1]

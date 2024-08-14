@@ -34,12 +34,25 @@ func (mgs *MGStorage) UpdateWeeklyBySlug(slug string, s []schedule.Weekly) error
 }
 
 func (mgs *MGStorage) GetWeeklyBySlug(slug string, query schedule.WeeklyQuery) ([]schedule.Weekly, error) {
-	// course, name, err := ParseSlug(slug)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	//filter := bson.D{{"course", course}, {"name", name}, {} }
-	return nil, nil
+	_, _, err := ParseSlug(slug)
+	if err != nil {
+		return nil, err
+	}
+	filter := bson.D{{"name", "4307"}, {"course", 2}, {"schedule", bson.M{"$elemMatch": bson.M{"is_even": true}}}}
+	// filter1 := fmt.Sprintf(`{"schedule": {"$elemMatch": {"is_even": true}}}`, name)
+	// var filter bson.D
+	// json.Unmarshal([]byte(filter1), &filter)
+
+	col := mgs.client.Database("scheduler").Collection("groups")
+
+	var g schedule.Group
+
+	err = col.FindOne(context.Background(), filter).Decode(&g)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	return g.Schedule, nil
 }
 
 func (mgs *MGStorage) GetGroups() ([]storage.GroupInfo, error) {
@@ -111,3 +124,26 @@ func ParseSlug(slug string) (course, name string, err error) {
 
 	return course, name, nil
 }
+
+func MongoPipeline(str string) mongo.Pipeline {
+	var pipeline = []bson.D{}
+	str = strings.TrimSpace(str)
+	if strings.Index(str, "[") != 0 {
+		var doc bson.D
+		bson.UnmarshalExtJSON([]byte(str), false, &doc)
+		pipeline = append(pipeline, doc)
+	} else {
+		bson.UnmarshalExtJSON([]byte(str), false, &pipeline)
+	}
+	return pipeline
+}
+
+// db.groups.find(
+// 	{ name: 4307,
+// 		schedule: {
+// 			$elemMatch: {
+// 				is_even: true
+// 			}
+// 		}
+// 	}
+// )
