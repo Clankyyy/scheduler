@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -34,15 +35,11 @@ func (mgs *MGStorage) UpdateWeeklyBySlug(slug string, s []schedule.Weekly) error
 }
 
 func (mgs *MGStorage) GetWeeklyBySlug(slug string, query schedule.WeeklyQuery) ([]schedule.Weekly, error) {
-	_, _, err := ParseSlug(slug)
+	course, name, err := ParseSlug(slug)
 	if err != nil {
 		return nil, err
 	}
-	filter := bson.D{{"name", "4307"}, {"course", 2}, {"schedule", bson.M{"$elemMatch": bson.M{"is_even": true}}}}
-	// filter1 := fmt.Sprintf(`{"schedule": {"$elemMatch": {"is_even": true}}}`, name)
-	// var filter bson.D
-	// json.Unmarshal([]byte(filter1), &filter)
-
+	filter := bson.D{{Key: "name", Value: name}, {Key: "course", Value: course}, {Key: "schedule", Value: bson.M{"$elemMatch": bson.M{"is_even": query.Boolean()}}}}
 	col := mgs.client.Database("scheduler").Collection("groups")
 
 	var g schedule.Group
@@ -115,13 +112,17 @@ func NewMGStorage(uri string) *MGStorage {
 	}
 }
 
-func ParseSlug(slug string) (course, name string, err error) {
+func ParseSlug(slug string) (course int, name string, err error) {
 	splited := strings.Split(slug, "-")
 	if len(splited) != 2 {
-		return "", "", errors.New("bad slug format")
+		return 0, "", errors.New("bad slug format")
 	}
-	course, name = splited[0], splited[1]
+	courseStr, name := splited[0], splited[1]
 
+	course, err = strconv.Atoi(courseStr)
+	if err != nil {
+		return 0, "", err
+	}
 	return course, name, nil
 }
 
