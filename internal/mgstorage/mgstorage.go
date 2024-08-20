@@ -58,30 +58,20 @@ func (mgs *MGStorage) GetDailyBySlug(slug string, weekday schedule.Weekday, quer
 	return d[0], nil
 }
 
-/* db.groups.aggregate([{
-	 $match: {course: 2, name: "4307"}
- },
- {
-	 "$unwind": "$schedule"
- },
- {
-	 $match: {"schedule.is_even": true}
- },
-{
-	 $unwind: "$schedule.weekly_schedule"
- },
- {
-	 $match: {"schedule.weekly_schedule.weekday": 1}
- },
- {
-	 $limit: 1
- },
- {
-	 $replaceRoot: {newRoot: "$schedule.weekly_schedule"}
- },
- ])*/
-
 func (mgs *MGStorage) UpdateWeeklyBySlug(slug string, s []schedule.Weekly) error {
+	course, name, err := ParseSlug(slug)
+	if err != nil {
+		return err
+	}
+
+	filter := bson.D{{Key: "name", Value: name}, {Key: "course", Value: course}}
+	update := bson.D{{Key: "$set", Value: bson.D{{"schedule", s}}}}
+	col := mgs.client.Database("scheduler").Collection("groups")
+
+	_, err = col.UpdateOne(context.Background(), filter, update)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -144,7 +134,6 @@ func (mgs *MGStorage) CreateGroupSchedule(g *schedule.Group) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(500*time.Millisecond))
 	defer cancel()
 	_, err := collection.InsertOne(ctx, *g)
-	//log.Println("Inserted id:", res.InsertedID)
 	return err
 }
 
@@ -188,3 +177,26 @@ func ParseSlug(slug string) (course int, name string, err error) {
 // 	}
 // )
 // db.groups.findOne({"schedule.weekly_schedule": {$elemMatch: {weekday: 1}}}, {"schedule.weekly_schedule.$": 1})
+
+/* db.groups.aggregate([{
+	 $match: {course: 2, name: "4307"}
+ },
+ {
+	 "$unwind": "$schedule"
+ },
+ {
+	 $match: {"schedule.is_even": true}
+ },
+{
+	 $unwind: "$schedule.weekly_schedule"
+ },
+ {
+	 $match: {"schedule.weekly_schedule.weekday": 1}
+ },
+ {
+	 $limit: 1
+ },
+ {
+	 $replaceRoot: {newRoot: "$schedule.weekly_schedule"}
+ },
+ ])*/
