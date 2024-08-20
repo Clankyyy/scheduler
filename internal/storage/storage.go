@@ -3,7 +3,6 @@ package storage
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/fs"
 	"log"
 	"os"
@@ -17,8 +16,8 @@ const postfix = ".json"
 type Storager interface {
 	CreateGroupSchedule(g *schedule.Group) error
 	DeleteSchedule(slug string) error
-	GetWeeklyBySlug(slug string, query schedule.WeeklyQuery) ([]schedule.Weekly, error)
-	GetDailyBySlug(slug string, weekday schedule.Weekday, query schedule.DailyQuery) (schedule.Daily, error)
+	GetWeeklyBySlug(slug string, query schedule.ScheduleType) ([]schedule.Weekly, error)
+	GetDailyBySlug(slug string, weekday schedule.Weekday, query schedule.ScheduleType) (schedule.Daily, error)
 	GetGroups() ([]GroupInfo, error)
 	UpdateWeeklyBySlug(slug string, s []schedule.Weekly) error
 }
@@ -32,7 +31,7 @@ type FSStorage struct {
 	path string
 }
 
-func (fss FSStorage) GetDailyBySlug(slug string, day schedule.Weekday, dailyType schedule.DailyQuery) (schedule.Daily, error) {
+func (fss FSStorage) GetDailyBySlug(slug string, day schedule.Weekday, dailyType schedule.ScheduleType) (schedule.Daily, error) {
 	f, err := os.Open(fss.path + slug + "-" + dailyType.String() + postfix)
 	if err != nil {
 		log.Println("Error opening file", err.Error())
@@ -50,25 +49,25 @@ func (fss FSStorage) GetDailyBySlug(slug string, day schedule.Weekday, dailyType
 	return *d, nil
 }
 
-func (fss FSStorage) GetWeeklyBySlug(slug string, param schedule.WeeklyQuery) ([]schedule.Weekly, error) {
-	if param == schedule.WeeklyFull {
-		w, err := fss.getFullWeekly(slug)
-		return w, err
-	} else if param == schedule.WeeklyEven || param == schedule.WeeklyOdd {
-		f, err := os.Open(fss.path + slug + "-" + param.String() + postfix)
-		if err != nil {
-			return nil, err
-		}
-		defer f.Close()
-		var w schedule.Weekly
-		if err := json.NewDecoder(f).Decode(&w); err != nil {
-			return nil, err
-		}
-		return []schedule.Weekly{w}, nil
-	}
+// func (fss FSStorage) GetWeeklyBySlug(slug string, param schedule.WeeklyQuery) ([]schedule.Weekly, error) {
+// 	if param == schedule.WeeklyFull {
+// 		w, err := fss.getFullWeekly(slug)
+// 		return w, err
+// 	} else if param == schedule.WeeklyEven || param == schedule.WeeklyOdd {
+// 		f, err := os.Open(fss.path + slug + "-" + param.String() + postfix)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		defer f.Close()
+// 		var w schedule.Weekly
+// 		if err := json.NewDecoder(f).Decode(&w); err != nil {
+// 			return nil, err
+// 		}
+// 		return []schedule.Weekly{w}, nil
+// 	}
 
-	return nil, fmt.Errorf("got some unexpected shit")
-}
+// 	return nil, fmt.Errorf("got some unexpected shit")
+// }
 
 func (fss FSStorage) UpdateWeeklyBySlug(s []schedule.Weekly, slug string) error {
 	for i, v := range s {
@@ -132,22 +131,22 @@ func (fss FSStorage) DeleteSchedule(slug string) error {
 	return nil
 }
 
-func (fss FSStorage) getFullWeekly(slug string) ([]schedule.Weekly, error) {
-	statusList := []string{schedule.WeeklyEven.String(), schedule.WeeklyOdd.String()}
-	w := make([]schedule.Weekly, 2)
-	for i, v := range statusList {
-		f, err := os.Open(fss.path + slug + "-" + v + postfix)
-		if err != nil {
-			return nil, err
-		}
-		defer f.Close()
+// func (fss FSStorage) getFullWeekly(slug string) ([]schedule.Weekly, error) {
+// 	statusList := []string{schedule.WeeklyEven.String(), schedule.WeeklyOdd.String()}
+// 	w := make([]schedule.Weekly, 2)
+// 	for i, v := range statusList {
+// 		f, err := os.Open(fss.path + slug + "-" + v + postfix)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		defer f.Close()
 
-		if err := json.NewDecoder(f).Decode(&w[i]); err != nil {
-			return nil, err
-		}
-	}
-	return w, nil
-}
+// 		if err := json.NewDecoder(f).Decode(&w[i]); err != nil {
+// 			return nil, err
+// 		}
+// 	}
+// 	return w, nil
+// }
 
 func (fss FSStorage) addGroup(slug string) error {
 	f, err := os.OpenFile(fss.path+"list.json", os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)

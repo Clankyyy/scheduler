@@ -46,7 +46,7 @@ func (s *APIserver) Run() {
 
 func (s *APIserver) handleGetDaily(w http.ResponseWriter, r *http.Request) error {
 	weekday, err1 := schedule.BuildWeekday(r.URL.Query().Get("day"))
-	scheduleType, err2 := schedule.BuildDailyQuery(r.URL.Query().Get("type"))
+	scheduleType, err2 := schedule.BuildScheduleType(r.URL.Query().Get("type"))
 	if err1 != nil || err2 != nil {
 		err := errs.NewAPIError(http.StatusBadRequest, "bad parameter format")
 		return WriteJSON(w, err.StatusCode, err)
@@ -99,7 +99,7 @@ func (s *APIserver) handleCreateWeekly(w http.ResponseWriter, r *http.Request) e
 func (s *APIserver) handleGetWeeklyBySlug(w http.ResponseWriter, r *http.Request) error {
 	slug := r.PathValue("slug")
 	scheduleTypeStr := r.URL.Query().Get("type")
-	scheduleType, err := schedule.BuildWeeklyQuery(scheduleTypeStr)
+	scheduleType, err := schedule.BuildScheduleType(scheduleTypeStr)
 	if err != nil {
 		err := errs.NewAPIError(http.StatusBadRequest, "Incorrect parameter format")
 		return WriteJSON(w, err.StatusCode, err)

@@ -28,8 +28,8 @@ func (w Weekly) EvenString() string {
 }
 
 type Daily struct {
-	Schedule []Subject `json:"daily_schedule"`
-	Weekday  Weekday   `json:"weekday"`
+	Schedule []Subject `json:"daily_schedule" bson:"daily_schedule"`
+	Weekday  Weekday   `json:"weekday" bson:"weekday"`
 }
 
 func NewDaily(s []Subject, w Weekday) *Daily {
@@ -46,51 +46,28 @@ func (d Daily) Show() {
 	}
 }
 
-type DailyQuery int
+type ScheduleType int
 
 const (
-	DailyEven DailyQuery = iota + 1
-	DailyOdd  DailyQuery = iota + 1
+	ScheduleEven ScheduleType = iota + 1
+	ScheduleOdd
 )
 
-func (dq DailyQuery) String() string {
-	return [...]string{"even", "odd"}[dq-1]
+func (sq ScheduleType) String() string {
+	return [...]string{"even", "odd"}[sq-1]
 }
 
-func BuildDailyQuery(param string) (DailyQuery, error) {
+func (sq ScheduleType) Boolean() bool {
+	return [...]bool{true, false}[sq-1]
+}
+
+func BuildScheduleType(param string) (ScheduleType, error) {
 	if param == "even" {
-		return DailyEven, nil
+		return ScheduleEven, nil
 	} else if param == "odd" {
-		return DailyOdd, nil
+		return ScheduleOdd, nil
 	}
-	return DailyEven, fmt.Errorf("bad value")
-}
-
-type WeeklyQuery int
-
-const (
-	WeeklyEven WeeklyQuery = iota + 1
-	WeeklyOdd
-	WeeklyFull
-)
-
-func (wq WeeklyQuery) String() string {
-	return [...]string{"even", "odd", "full"}[wq-1]
-}
-
-func (wq WeeklyQuery) Boolean() bool {
-	return [...]bool{true, false, true}[wq-1]
-}
-
-func BuildWeeklyQuery(param string) (WeeklyQuery, error) {
-	if param == "even" {
-		return WeeklyEven, nil
-	} else if param == "odd" {
-		return WeeklyOdd, nil
-	} else if param == "full" {
-		return WeeklyFull, nil
-	}
-	return WeeklyEven, fmt.Errorf("bad value")
+	return ScheduleEven, fmt.Errorf("bad value")
 }
 
 type Weekday int

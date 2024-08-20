@@ -27,14 +27,65 @@ type MGStorage struct {
 	client *mongo.Client
 }
 
-func (mgs *MGStorage) GetDailyBySlug(slug string, weekday schedule.Weekday, query schedule.DailyQuery) (schedule.Daily, error) {
-	return schedule.Daily{}, nil
+func (mgs *MGStorage) GetDailyBySlug(slug string, weekday schedule.Weekday, query schedule.ScheduleType) (schedule.Daily, error) {
+	course, name, err := ParseSlug(slug)
+	if err != nil {
+		return schedule.Daily{}, nil
+	}
+
+	col := mgs.client.Database("scheduler").Collection("groups")
+	matchCN := bson.D{{"$match", bson.D{{"name", name}, {"course", course}}}}
+	unwindSchedule := bson.D{{"$unwind", "$schedule"}}
+	matchEven := bson.D{{"$match", bson.D{{"schedule.is_even", query.Boolean()}}}}
+	unwindWeekly := bson.D{{"$unwind", "$schedule.weekly_schedule"}}
+	matchDay := bson.D{{"$match", bson.D{{"schedule.weekly_schedule.weekday", weekday}}}}
+	replaceRoot := bson.D{{"$replaceRoot", bson.D{{"newRoot", "$schedule.weekly_schedule"}}}}
+
+	cursor, err := col.Aggregate(context.Background(), mongo.Pipeline{matchCN, unwindSchedule, matchEven, unwindWeekly, matchDay, replaceRoot})
+	if err != nil {
+		log.Println(err)
+		return schedule.Daily{}, err
+	}
+
+	var d []schedule.Daily
+	if err = cursor.All(context.Background(), &d); err != nil {
+		return schedule.Daily{}, err
+	}
+	if len(d) < 1 {
+		return schedule.Daily{}, errors.New("no objects found")
+	}
+
+	return d[0], nil
 }
+
+/* db.groups.aggregate([{
+	 $match: {course: 2, name: "4307"}
+ },
+ {
+	 "$unwind": "$schedule"
+ },
+ {
+	 $match: {"schedule.is_even": true}
+ },
+{
+	 $unwind: "$schedule.weekly_schedule"
+ },
+ {
+	 $match: {"schedule.weekly_schedule.weekday": 1}
+ },
+ {
+	 $limit: 1
+ },
+ {
+	 $replaceRoot: {newRoot: "$schedule.weekly_schedule"}
+ },
+ ])*/
+
 func (mgs *MGStorage) UpdateWeeklyBySlug(slug string, s []schedule.Weekly) error {
 	return nil
 }
 
-func (mgs *MGStorage) GetWeeklyBySlug(slug string, query schedule.WeeklyQuery) ([]schedule.Weekly, error) {
+func (mgs *MGStorage) GetWeeklyBySlug(slug string, query schedule.ScheduleType) ([]schedule.Weekly, error) {
 	course, name, err := ParseSlug(slug)
 	if err != nil {
 		return nil, err
@@ -73,8 +124,6 @@ func (mgs *MGStorage) GetGroups() ([]storage.GroupInfo, error) {
 }
 
 func (mgs *MGStorage) DeleteSchedule(slug string) error {
-	col := mgs.client.Database("scheduler").Collection("groups")
-
 	course, name, err := ParseSlug(slug)
 	if err != nil {
 		return err
@@ -83,6 +132,8 @@ func (mgs *MGStorage) DeleteSchedule(slug string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(500*time.Millisecond))
 	defer cancel()
+
+	col := mgs.client.Database("scheduler").Collection("groups")
 	res, err := col.DeleteOne(ctx, filter)
 	log.Println("Filter is: ", filter, "deleted count:", res.DeletedCount)
 	return err
@@ -126,25 +177,14 @@ func ParseSlug(slug string) (course int, name string, err error) {
 	return course, name, nil
 }
 
-func MongoPipeline(str string) mongo.Pipeline {
-	var pipeline = []bson.D{}
-	str = strings.TrimSpace(str)
-	if strings.Index(str, "[") != 0 {
-		var doc bson.D
-		bson.UnmarshalExtJSON([]byte(str), false, &doc)
-		pipeline = append(pipeline, doc)
-	} else {
-		bson.UnmarshalExtJSON([]byte(str), false, &pipeline)
-	}
-	return pipeline
-}
-
 // db.groups.find(
-// 	{ name: 4307,
+// 	{ name: "4307",
 // 		schedule: {
 // 			$elemMatch: {
 // 				is_even: true
 // 			}
-// 		}
+// 		},
+
 // 	}
 // )
+// db.groups.findOne({"schedule.weekly_schedule": {$elemMatch: {weekday: 1}}}, {"schedule.weekly_schedule.$": 1})
