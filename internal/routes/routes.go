@@ -33,7 +33,9 @@ func (s *APIserver) Run() {
 	mux.HandleFunc("GET /schedule/daily/{slug}", makeHTTPHandleFunc(s.handleGetDaily))
 
 	mux.HandleFunc("POST /schedule/weekly", makeHTTPHandleFunc(s.handleCreateWeekly))
+	mux.HandleFunc("GET /schedule/weekly/full/{slug}", makeHTTPHandleFunc(s.handleGetFullWeeklyBySlug))
 	mux.HandleFunc("GET /schedule/weekly/{slug}", makeHTTPHandleFunc(s.handleGetWeeklyBySlug))
+
 	mux.HandleFunc("PUT /schedule/weekly/{slug}", makeHTTPHandleFunc(s.handleUpdateWeekly))
 	mux.HandleFunc("DELETE /schedule/weekly/{slug}", makeHTTPHandleFunc(s.handleDeleteWeeklyBySlug))
 
@@ -106,6 +108,18 @@ func (s *APIserver) handleGetWeeklyBySlug(w http.ResponseWriter, r *http.Request
 	}
 
 	weekly, err := s.storage.GetWeeklyBySlug(slug, scheduleType)
+	if err != nil {
+		err := errs.NewAPIError(http.StatusInternalServerError, "Unable to get schedule")
+		return WriteJSON(w, err.StatusCode, err)
+	}
+
+	return WriteJSON(w, http.StatusOK, weekly)
+}
+
+func (s *APIserver) handleGetFullWeeklyBySlug(w http.ResponseWriter, r *http.Request) error {
+	slug := r.PathValue("slug")
+
+	weekly, err := s.storage.GetFullWeeklyBySlug(slug)
 	if err != nil {
 		err := errs.NewAPIError(http.StatusInternalServerError, "Unable to get schedule")
 		return WriteJSON(w, err.StatusCode, err)

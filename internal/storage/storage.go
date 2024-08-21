@@ -16,10 +16,13 @@ const postfix = ".json"
 type Storager interface {
 	CreateGroupSchedule(g *schedule.Group) error
 	DeleteSchedule(slug string) error
-	GetWeeklyBySlug(slug string, query schedule.ScheduleType) ([]schedule.Weekly, error)
+
+	GetFullWeeklyBySlug(slug string) ([]schedule.Weekly, error)
+	GetWeeklyBySlug(slug string, query schedule.ScheduleType) (schedule.Weekly, error)
 	GetDailyBySlug(slug string, weekday schedule.Weekday, query schedule.ScheduleType) (schedule.Daily, error)
-	GetGroups() ([]GroupInfo, error)
 	UpdateWeeklyBySlug(slug string, s []schedule.Weekly) error
+
+	GetGroups() ([]GroupInfo, error)
 }
 
 type GroupInfo struct {

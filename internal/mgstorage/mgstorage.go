@@ -65,7 +65,7 @@ func (mgs *MGStorage) UpdateWeeklyBySlug(slug string, s []schedule.Weekly) error
 	}
 
 	filter := bson.D{{Key: "name", Value: name}, {Key: "course", Value: course}}
-	update := bson.D{{Key: "$set", Value: bson.D{{"schedule", s}}}}
+	update := bson.D{{Key: "$set", Value: bson.D{{Key: "schedule", Value: s}}}}
 	col := mgs.client.Database("scheduler").Collection("groups")
 
 	_, err = col.UpdateOne(context.Background(), filter, update)
@@ -75,12 +75,17 @@ func (mgs *MGStorage) UpdateWeeklyBySlug(slug string, s []schedule.Weekly) error
 	return nil
 }
 
-func (mgs *MGStorage) GetWeeklyBySlug(slug string, query schedule.ScheduleType) ([]schedule.Weekly, error) {
+func (mgs *MGStorage) GetWeeklyBySlug(slug string, query schedule.ScheduleType) (schedule.Weekly, error) {
+	return schedule.Weekly{}, nil
+}
+
+func (mgs *MGStorage) GetFullWeeklyBySlug(slug string) ([]schedule.Weekly, error) {
 	course, name, err := ParseSlug(slug)
 	if err != nil {
 		return nil, err
 	}
-	filter := bson.D{{Key: "name", Value: name}, {Key: "course", Value: course}, {Key: "schedule", Value: bson.M{"$elemMatch": bson.M{"is_even": query.Boolean()}}}}
+	//opts := options.Find().SetProjection(bson.D{{Key: "schedule", Value: 1}})
+	filter := bson.D{{Key: "name", Value: name}, {Key: "course", Value: course}}
 	col := mgs.client.Database("scheduler").Collection("groups")
 
 	var g schedule.Group
