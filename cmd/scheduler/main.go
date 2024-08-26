@@ -20,8 +20,8 @@ func main() {
 	if !ok {
 		log.Fatal("Fail to load mongo uri")
 	}
-	mongo := mgstorage.NewMGStorage(uri)
+	mongoStorage := mgstorage.NewMGStorage(uri)
 	// s := storage.NewFSStorage("data/spbgti/")
-	apiServer := routes.NewAPIServer(":8000", mongo)
+	apiServer := routes.NewAPIServer(":8000", mongoStorage)
 	apiServer.Run()
 }

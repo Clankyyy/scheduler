@@ -82,9 +82,9 @@ const (
 	Sunday
 )
 
-// func (w Weekday) MarshalJSON() ([]byte, error) {
-// 	return json.Marshal(w.String())
-// }
+func (w Weekday) MarshalJSON() ([]byte, error) {
+	return json.Marshal(w.String())
+}
 
 func (w Weekday) String() string {
 	return [...]string{"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"}[w-1]
