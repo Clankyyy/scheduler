@@ -154,8 +154,7 @@ func (mgs *MGStorage) DeleteSchedule(slug string) error {
 	defer cancel()
 
 	col := mgs.client.Database("scheduler").Collection("groups")
-	res, err := col.DeleteOne(ctx, filter)
-	log.Println("Filter is: ", filter, "deleted count:", res.DeletedCount)
+	_, err = col.DeleteOne(ctx, filter)
 	return err
 }
 
