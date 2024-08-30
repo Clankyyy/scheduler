@@ -22,6 +22,6 @@ func main() {
 	}
 	mongoStorage := mgstorage.NewMGStorage(uri)
 	// s := storage.NewFSStorage("data/spbgti/")
-	apiServer := routes.NewAPIServer(":8000", mongoStorage)
+	apiServer := routes.NewAPIServer(":8081", mongoStorage) // 8000
 	apiServer.Run()
 }

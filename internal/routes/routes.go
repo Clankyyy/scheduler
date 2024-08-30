@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"time"
@@ -11,6 +12,9 @@ import (
 	errs "github.com/Clankyyy/scheduler/internal/errors"
 	"github.com/Clankyyy/scheduler/internal/schedule"
 	"github.com/Clankyyy/scheduler/internal/storage"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type APIserver struct {
@@ -18,10 +22,29 @@ type APIserver struct {
 	storage    storage.Storager
 }
 
-func NewAPIServer(listenAddr string, storage storage.Storager) *APIserver {
-	return &APIserver{
-		listenAddr: listenAddr,
-		storage:    storage,
+var (
+	c = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "app_sample_metric",
+		Help: "Sample metric for app",
+	})
+
+	h = promauto.NewHistogram(prometheus.HistogramOpts{
+		Name: "app_sample_histogram",
+		Help: "Sample histogram",
+	})
+	d = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "app_sample_devices",
+		Help: "Sample counter opts devices"}, []string{"device"})
+)
+
+func UpdateMEtrics() {
+	for {
+		rand.New(rand.NewSource(time.Now().UnixNano()))
+		h.Observe(float64(rand.Intn(100-0+1) + 0))
+		d.With(prometheus.Labels{"device": "/dev/sda"}).Inc()
+		c.Inc()
+		fmt.Print(".")
+		time.Sleep(3 * time.Second)
 	}
 }
 
@@ -40,7 +63,7 @@ func (s *APIserver) Run() {
 	mux.HandleFunc("DELETE /schedule/weekly/{slug}", makeHTTPHandleFunc(s.handleDeleteWeeklyBySlug))
 
 	mux.HandleFunc("GET /ping", makeHTTPHandleFunc(s.handlePing))
-
+	mux.Handle("GET /metrics", promhttp.Handler())
 	log.Println("API running on port: ", s.listenAddr)
 
 	http.ListenAndServe(s.listenAddr, mux)
@@ -171,5 +194,12 @@ func makeHTTPHandleFunc(f apiFunc) http.HandlerFunc {
 			}
 			WriteJSON(w, http.StatusBadRequest, apiErr)
 		}
+	}
+}
+
+func NewAPIServer(listenAddr string, storage storage.Storager) *APIserver {
+	return &APIserver{
+		listenAddr: listenAddr,
+		storage:    storage,
 	}
 }
