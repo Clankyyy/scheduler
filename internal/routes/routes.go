@@ -4,53 +4,25 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"math/rand"
 	"net/http"
 	"strconv"
 	"time"
 
 	errs "github.com/Clankyyy/scheduler/internal/errors"
+	"github.com/Clankyyy/scheduler/internal/metrics"
 	"github.com/Clankyyy/scheduler/internal/schedule"
 	"github.com/Clankyyy/scheduler/internal/storage"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type APIserver struct {
 	listenAddr string
 	storage    storage.Storager
-}
-
-var (
-	c = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "app_sample_metric",
-		Help: "Sample metric for app",
-	})
-
-	h = promauto.NewHistogram(prometheus.HistogramOpts{
-		Name: "app_sample_histogram",
-		Help: "Sample histogram",
-	})
-	d = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "app_sample_devices",
-		Help: "Sample counter opts devices"}, []string{"device"})
-)
-
-func UpdateMEtrics() {
-	for {
-		rand.New(rand.NewSource(time.Now().UnixNano()))
-		h.Observe(float64(rand.Intn(100-0+1) + 0))
-		d.With(prometheus.Labels{"device": "/dev/sda"}).Inc()
-		c.Inc()
-		fmt.Print(".")
-		time.Sleep(3 * time.Second)
-	}
+	gatherer   metrics.Gatherer
 }
 
 func (s *APIserver) Run() {
 	mux := http.NewServeMux()
-
 	mux.HandleFunc("GET /groups/", makeHTTPHandleFunc(s.handleGetGroups))
 
 	mux.HandleFunc("GET /schedule/daily/{slug}", makeHTTPHandleFunc(s.handleGetDaily))
@@ -97,13 +69,14 @@ func (s *APIserver) handlePing(w http.ResponseWriter, r *http.Request) error {
 
 func (s *APIserver) handleGetGroups(w http.ResponseWriter, r *http.Request) error {
 	groups, err := s.storage.GetGroups()
+	if err != nil {
+		fmt.Println(err)
+		WriteJSON(w, http.StatusInternalServerError, err.Error())
+	}
 	groupsStr := make([]string, 0, len(groups))
 	for _, v := range groups {
 		slug := strconv.Itoa(v.Course) + "-" + v.Name
 		groupsStr = append(groupsStr, slug)
-	}
-	if err != nil {
-		WriteJSON(w, http.StatusInternalServerError, err.Error())
 	}
 	return WriteJSON(w, http.StatusOK, groupsStr)
 }
@@ -152,6 +125,9 @@ func (s *APIserver) handleGetFullWeeklyBySlug(w http.ResponseWriter, r *http.Req
 }
 
 func (s *APIserver) handleUpdateWeekly(w http.ResponseWriter, r *http.Request) error {
+	defer func() {
+		s.gatherer.Inc("weekly", "update")
+	}()
 	newSchedule := make([]schedule.Weekly, 0, 2)
 	slug := r.PathValue("slug")
 	if err := json.NewDecoder(r.Body).Decode(&newSchedule); err != nil {
@@ -166,6 +142,9 @@ func (s *APIserver) handleUpdateWeekly(w http.ResponseWriter, r *http.Request) e
 }
 
 func (s *APIserver) handleDeleteWeeklyBySlug(w http.ResponseWriter, r *http.Request) error {
+	defer func() {
+		s.gatherer.Inc("group", "delete")
+	}()
 	slug := r.PathValue("slug")
 	return s.storage.DeleteSchedule(slug)
 }
@@ -197,9 +176,10 @@ func makeHTTPHandleFunc(f apiFunc) http.HandlerFunc {
 	}
 }
 
-func NewAPIServer(listenAddr string, storage storage.Storager) *APIserver {
+func NewAPIServer(listenAddr string, storage storage.Storager, gatherer metrics.Gatherer) *APIserver {
 	return &APIserver{
 		listenAddr: listenAddr,
 		storage:    storage,
+		gatherer:   gatherer,
 	}
 }

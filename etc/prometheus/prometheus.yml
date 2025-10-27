@@ -1,6 +1,7 @@
 global:
-  scrape_interval:     15s
-  evaluation_interval: 15s
+  scrape_interval:     1m
+  evaluation_interval: 1m
+  scrape_timeout: 15s
   # external_labels:
   #   monitor: 'geekshubs'
 
@@ -19,9 +20,8 @@ global:
 #             - "alertmanager:9093"
 
 scrape_configs:
-
   - job_name: 'prometheus'
-    scrape_interval: 5s
+    scrape_interval: 30s
     static_configs:
       - targets: ['localhost:9090']
 
@@ -33,6 +33,6 @@ scrape_configs:
   #     - targets: ['host.docker.internal:9323']
 
   - job_name: 'scheduler-api'
-    scrape_interval: 5s
+    scrape_interval: 30s
     static_configs:
-      - targets: ['app:8081']
+      - targets: ['scheduler:8000']

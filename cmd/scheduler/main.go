@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/Clankyyy/scheduler/internal/metrics"
 	"github.com/Clankyyy/scheduler/internal/mgstorage"
 	"github.com/Clankyyy/scheduler/internal/routes"
 	"github.com/joho/godotenv"
@@ -11,7 +12,7 @@ import (
 
 func init() {
 	if err := godotenv.Load(); err != nil {
-		log.Print("No .env file found")
+		panic("No .env file found")
 	}
 }
 
@@ -21,7 +22,7 @@ func main() {
 		log.Fatal("Fail to load mongo uri")
 	}
 	mongoStorage := mgstorage.NewMGStorage(uri)
-	// s := storage.NewFSStorage("data/spbgti/")
-	apiServer := routes.NewAPIServer(":8081", mongoStorage) // 8000
+	prometheusGatherer := metrics.NewHttpRequestsCounter()
+	apiServer := routes.NewAPIServer(":8000", mongoStorage, prometheusGatherer) // 8000
 	apiServer.Run()
 }

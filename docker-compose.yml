@@ -1,8 +1,23 @@
 version: '3.8'
 services:
+  # scheduler:
+  #   build: .
+  #   container_name: scheduler
+  #   restart: unless-stopped
+  #   hostname: scheduler
+  #   env_file:
+  #     - ./.env
+  #   ports:
+  #     - "8000:8000"
+  #   networks:
+  #     - default
+  #   depends_on:
+  #     - mongodb
+
   mongodb:
     container_name: mongodb
     image: mongo:6-jammy
+    hostname: mongo
     env_file:
       - .env
     ports:
@@ -10,35 +25,47 @@ services:
     volumes:
       - dbdata:/data/db
 
-  prometheus:
-    image: prom/prometheus:v2.53.2
-    volumes:
-      - ./prometheus:/etc/prometheus/
-    container_name: prometheus
-    hostname: prometheus
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-      - "--storage.tsdb.path=/prometheus"
-      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
-      - "--web.console.templates=/usr/share/prometheus/consoles"
-      - "--web.enable-lifecycle"
-    ports:
-      - 9090:9090
-    restart: unless-stopped
-    environment:
-      TZ: "Europe/Moscow"
+  # prometheus:
+  #   image: prom/prometheus:v2.53.2
+  #   user: root
+  #   volumes:
+  #     - ./etc/prometheus:/etc/prometheus/
+  #     - /data/prometheus/:/prometheus/
+  #   container_name: prometheus
+  #   hostname: prometheus
+  #   command:
+  #     - "--config.file=/etc/prometheus/prometheus.yml"
+  #     - "--storage.tsdb.path=/prometheus"
+  #     - "--storage.tsdb.retention.time=7d"
+  #     - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+  #     - "--web.console.templates=/usr/share/prometheus/consoles"
+  #     - "--web.enable-lifecycle"
+  #   ports:
+  #     - 9090:9090
+  #   #restart: unless-stopped
+  #   environment:
+  #     TZ: "Europe/Moscow"
+  #   depends_on:
+  #     - mongodb
+  #   networks:
+  #     - default
 
-  grafana:
-    image: grafana/grafana:11.1.5-ubuntu
-    user: root
-    ports:
-      - "3000:3000"
-    volumes:
-      - "./var/grafana/grafana_data:/var/lib/grafana"
-      - "./etc/grafana/provisioning/:/etc/grafana/provisioning/"
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=foobar
-      - GF_USERS_ALLOW_SIGN_UP=false
+  # grafana:
+  #   image: grafana/grafana:11.1.5
+  #   container_name: grafana
+  #   user: root
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - "/data/grafana:/var/lib/grafana"
+  #     - "/etc/grafana/provisioning/:/etc/grafana/provisioning/"
+  #   environment:
+  #     - GF_SECURITY_ADMIN_PASSWORD=foobar
+  #     - GF_USERS_ALLOW_SIGN_UP=false
+  #   depends_on:
+  #     - prometheus
+  #   networks:
+  #     - default
 
 volumes:
   dbdata:

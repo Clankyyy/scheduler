@@ -167,8 +167,7 @@ func (mgs *MGStorage) CreateGroupSchedule(g *schedule.Group) error {
 }
 
 func NewMGStorage(uri string) *MGStorage {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*1))
-	defer cancel()
+	ctx := context.Background()
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
 		log.Fatalf("Cant connect to database with error: %s", err)
